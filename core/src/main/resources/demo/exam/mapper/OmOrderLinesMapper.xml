@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="demo.exam.mapper.OmOrderLinesMapper">
+    <resultMap id="BaseResultMap" type="demo.exam.dto.OmOrderLines">
+        <result column="LINE_ID" property="lineId" jdbcType="DECIMAL" />
+        <result column="HEADER_ID" property="headerId" jdbcType="DECIMAL" />
+        <result column="LINE_NUMBER" property="lineNumber" jdbcType="DECIMAL" />
+        <result column="INVENTORY_ITEM_ID" property="inventoryItemId" jdbcType="DECIMAL" />
+        <result column="ORDERD_QUANTITY" property="orderdQuantity" jdbcType="DECIMAL" />
+        <result column="ORDER_QUANTITY_UOM" property="orderQuantityUom" jdbcType="VARCHAR" />
+        <result column="UNIT_SELLING_PRICE" property="unitSellingPrice" jdbcType="DECIMAL" />
+        <result column="DESCRIPTION" property="description" jdbcType="VARCHAR" />
+        <result column="COMPANY_ID" property="companyId" jdbcType="DECIMAL" />
+        <result column="ADDITION1" property="addition1" jdbcType="VARCHAR" />
+        <result column="ADDITION2" property="addition2" jdbcType="VARCHAR" />
+        <result column="ADDITION3" property="addition3" jdbcType="VARCHAR" />
+        <result column="ADDITION4" property="addition4" jdbcType="VARCHAR" />
+        <result column="ADDITION5" property="addition5" jdbcType="VARCHAR" />
+        <result column="saleMoney" property="saleMoney" jdbcType="DECIMAL" />
+        <result column="ITEM_CODE" property="itemCode" jdbcType="VARCHAR" />
+        <result column="ITEM_DESCRIPTION" property="itemDescription" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <select id="queryByCond" resultMap="BaseResultMap">
+        SELECT
+        hol.LINE_ID,
+        hol.LINE_NUMBER,
+        hii.ITEM_CODE,
+        hii.ITEM_DESCRIPTION,
+        hol.ORDER_QUANTITY_UOM,
+        hol.ORDERD_QUANTITY,
+        hol.UNIT_SELLING_PRICE,
+        hol.DESCRIPTION,
+        hol.ADDITION1,
+        hol.ADDITION2,
+        hol.ADDITION3,
+        hol.ADDITION4,
+        hol.ADDITION5,
+        ROUND(
+        sum(
+        ORDERD_QUANTITY * UNIT_SELLING_PRICE
+        ),
+        2
+        ) saleMoney
+        FROM
+        hap_om_order_lines hol,
+        hap_inv_inventory_items hii
+        <where>
+        hol.INVENTORY_ITEM_ID = hii.INVENTORY_ITEM_ID
+        <if test="headerId !=null and headerId!=0">AND hol.HEADER_ID=#{headerId}</if>
+        <if test="headerId ==null or headerId==0">AND hol.HEADER_ID=0</if>
+        </where>
+        GROUP BY
+        hol.LINE_NUMBER
+    </select>
+
+    <select id="selectLineNumber" resultType="java.lang.Long">
+        select MAX(LINE_NUMBER) from HAP_OM_ORDER_LINES WHERE HEADER_ID=#{headerId}
+    </select>
+
+    <delete id="deleteLineByHeaderId" parameterType="java.lang.Integer">
+        DELETE FROM HAP_OM_ORDER_LINES
+        <where>
+            HEADER_ID=#{headerId}
+        </where>
+    </delete>
+
+    <delete id="deleteOrderByHeaderId" parameterType="java.lang.Integer">
+        DELETE FROM HAP_OM_ORDER_HEADERS
+        <where>
+            HEADER_ID=#{headerId}
+        </where>
+    </delete>
+</mapper>

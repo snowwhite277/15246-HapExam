@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="demo.exam.mapper.OmOrderHeadersMapper">
+
+    <resultMap id="BaseResultMap" type="demo.exam.dto.OmOrderHeaders">
+        <result column="HEADER_ID" property="headerId" jdbcType="DECIMAL" />
+        <result column="ORDER_NUMBER" property="orderNumber" jdbcType="VARCHAR" />
+        <result column="COMPANY_ID" property="companyId" jdbcType="DECIMAL" />
+        <result column="ORDER_DATE" property="orderDate" jdbcType="DATE" />
+        <result column="ORDER_STATUS" property="orderStatus" jdbcType="VARCHAR" />
+        <result column="CUSTOMER_ID" property="customerId" jdbcType="DECIMAL" />
+        <result column="COMPANY_NAME" property="companyName" jdbcType="VARCHAR" />
+        <result column="CUSTOMER_NAME" property="customerName" jdbcType="VARCHAR" />
+        <result column="price" property="price" jdbcType="DECIMAL" />
+        <result column="INVENTORY_ITEM_ID" property="inventoryItemId" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <select id="selectAll1" resultMap="BaseResultMap">
+        <!--<select id="selectAll1" resultType="demo.exam.dto.OmOrderHeaders">-->
+        SELECT
+        hoh.HEADER_ID,
+        hoh.ORDER_NUMBER,
+        hoh.ORDER_STATUS,
+        hac.CUSTOMER_ID,
+        hoc.COMPANY_ID,
+        hoh.ORDER_DATE,
+        hoc.COMPANY_NAME companyName,
+        hac.CUSTOMER_NAME customerName,
+        round(h.price,2) price
+        FROM
+        hap_om_order_headers hoh
+        LEFT OUTER JOIN (
+        SELECT
+        HEADER_ID,
+        sum(
+        ORDERD_QUANTITY * UNIT_SELLING_PRICE
+        ) price
+        FROM
+        hap_om_order_lines
+        GROUP BY
+        HEADER_ID
+        ) h ON h.HEADER_ID = hoh.HEADER_ID,
+        hap_org_companys hoc,
+        hap_ar_customers hac
+        <where>
+            hoh.COMPANY_ID = hoc.COMPANY_ID
+            AND hoh.CUSTOMER_ID = hac.CUSTOMER_ID
+            <if test="companyId">AND hoc.company_id=#{companyId}</if>
+            <if test="customerId!=null">AND hac.customer_id=#{customerId}</if>
+            <if test="orderNumber!=null">AND hoh.ORDER_NUMBER=#{orderNumber}</if>
+            <if test="inventoryItemId!=null">AND hoh.HEADER_ID in (select HEADER_ID FROM HAP_OM_ORDER_LINES where INVENTORY_ITEM_ID=#{inventoryItemId} )</if>
+            <if test="orderStatus!=null">AND hoh.ORDER_STATUS=#{orderStatus}</if>
+        </where>
+    </select>
+
+    <select id="selectMes" resultMap="BaseResultMap">
+            SELECT
+                hoh.HEADER_ID,
+                hoh.ORDER_NUMBER,
+                hoh.ORDER_DATE,
+                hoh.ORDER_STATUS,
+                hoh.COMPANY_ID,
+                hoh.CUSTOMER_ID,
+                hac.CUSTOMER_NAME,
+                hoc.COMPANY_NAME,
+                round(h.price,2) price
+            FROM
+                hap_ar_customers hac,
+                hap_org_companys hoc,
+                hap_om_order_headers hoh
+            LEFT OUTER JOIN (
+                SELECT
+                    HEADER_ID,
+                    sum(
+                        ORDERD_QUANTITY * UNIT_SELLING_PRICE
+                    ) price
+                FROM
+                    hap_om_order_lines
+                GROUP BY
+                    HEADER_ID
+            ) h ON h.HEADER_ID = hoh.HEADER_ID
+            WHERE
+                hoh.COMPANY_ID = hoc.COMPANY_ID
+            AND hoh.CUSTOMER_ID = hac.CUSTOMER_ID
+            AND hoh.HEADER_ID = #{headerId}
+    </select>
+</mapper>
